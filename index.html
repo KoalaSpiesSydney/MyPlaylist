@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <title>MyPlaylist — Justine Leigh</title>
+
+  <style>
+    :root {
+      --text: #f5f4f2;
+      --muted: #ebe9e4;
+      --shadow: rgb(3, 30, 39);
+      --pill-bg: rgba(255,255,255,0.08);
+      --pill-border: rgba(255,255,255,0.35);
+      --pill-hover: rgba(255,255,255,0.16);
+      --accent: #ffcc00;
+      --tile-bg: transparent;
+      --tile-bg-hover: rgba(241,108,108,0.9);
+      --tile-text: #fff;
+      --outline: rgba(250, 250, 220, 0.45);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --text: #0f0f12;
+        --muted: #222;
+        --shadow: rgba(0, 0, 0, 0.35);
+        --pill-bg: rgba(0,0,0,0.06);
+        --pill-border: rgba(0,0,0,0.18);
+        --pill-hover: rgba(0,0,0,0.12);
+        --outline: rgba(0,0,0,0.12);
+      }
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-weight: 400;
+      font-style: normal;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    *, *::before, *::after { box-sizing: inherit; }
+    body { font-family: "avenir-next-lt-pro", sans-serif; color: var(--text); }
+
+    .video-background {
+      position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      z-index: -1; background: #000;
+    }
+h1, h2 {
+  font-family: "Roboto Slab", serif;
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+}
+
+    header { text-align: center; padding: 40px 16px; }
+    h1 {
+      font-family: "Roboto Slab", serif;
+      font-weight: 700; font-style: normal;
+      font-size: clamp(4.4rem, 8vw, 7.6rem);
+      margin: 10px 0 0;
+      text-shadow: 4px 4px 8px var(--shadow);
+      letter-spacing: 0.03em;
+      color: transparent;
+      opacity: 90%;
+    }
+
+    #now-playing-title {
+        font-family: "Roboto", sans-serif;
+      font-weight: 200; font-style: normal; font-size: clamp(1.2rem, 4vw, 2.2rem);
+      color: rgb(237, 249, 206);
+      text-shadow: 0 1px 2px var(--shadow);
+      margin: 30px auto 20px; text-align: center;
+      background-color: rgba(22, 1, 1, 0.55);
+      max-width: 900px; border-radius: 30px; padding: 14px 22px;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.35), 0 0 50px rgba(255, 255, 160, 0.2), inset 0 0 16px rgba(255, 255, 180, 0.18);
+      transition: all 0.4s ease-in-out, text-shadow 0.3s ease-in-out;
+    }
+    #audio-player-wrapper.playing #now-playing-title {
+      font-weight: 400; color: rgba(232, 11, 147, 0.88);
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4);
+      animation: playerPulse 5s infinite ease-in-out, titleBounce 3s infinite ease-in-out;
+      background: linear-gradient(135deg, rgba(254,254,251,0.9), rgba(245,234,240,0.9));
+      border: none; border-radius: 30px; padding: 18px 26px;
+      box-shadow: 0 0 20px rgba(244, 239, 186, 0.4), 0 0 40px rgba(255, 225, 100, 0.3), inset 0 0 12px rgba(200, 200, 129, 0.2);
+      transform: scale(1.02);
+    }
+
+    @keyframes playerPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:.85}}
+    @keyframes titleBounce { 0%,20%,80%,100%{transform:translateY(0)} 40%,60%{transform:translateY(-10px)} }
+
+    #audio-player-wrapper {
+      max-width: 900px; margin: auto; text-align: center; padding: 10px 16px 0;
+      border-radius: 24px; box-shadow: 0 0 0 1px var(--outline);
+      backdrop-filter: blur(2px);
+    }
+    audio {
+      background: transparent;
+      border: none;
+      outline: none;
+    }
+    audio::-webkit-media-controls-panel { background: transparent !important; }
+    audio::-webkit-media-controls-enclosure { background: transparent !important; }
+
+    /* ===== PLAYLIST GRID — 2 columns, 2 sections each ===== */
+    .playlist-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+      padding: 28px 16px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) { .playlist-grid { grid-template-columns: 1fr; } }
+
+    .playlist-column {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .playlist-section h2 {
+      font-family: "adlery-pro", sans-serif;
+      font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+      margin: 0 0 12px;
+      color: var(--text);
+      text-shadow: 2px 2px 6px var(--shadow);
+      border-bottom: 1px solid var(--outline);
+      padding-bottom: 8px;
+    }
+
+    .playlist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+
+    .track {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border-radius: 12px; cursor: pointer;
+      background: var(--tile-bg); color: var(--tile-text);
+      transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease;
+      box-shadow: 0 0 0 1px var(--outline);
+    }
+    .track:hover { background: var(--tile-bg-hover); transform: translateY(-1px); }
+    .track h3 { font-size: clamp(1rem, 2.6vw, 1.15rem); margin: 0; font-weight: 700; flex: 1; }
+
+    /* ===== PLAY/PAUSE BUTTON ===== */
+    .play-button {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+      padding: 0;
+    }
+    .play-button:hover {
+      background: rgba(255,255,255,0.25);
+      transform: scale(1.1);
+      border-color: rgba(255,255,255,0.85);
+    }
+    .track.active .play-button {
+      background: rgba(232, 11, 147, 0.75);
+      border-color: rgba(255, 200, 220, 0.9);
+      animation: pulseBtn 2s infinite ease-in-out;
+    }
+    @keyframes pulseBtn { 0%,100%{box-shadow:0 0 0 0 rgba(232,11,147,0.5)} 50%{box-shadow:0 0 0 6px rgba(232,11,147,0)} }
+
+    /* ===== NAV ===== */
+    nav.site-nav { padding: 20px 16px 28px; }
+    .site-nav ul {
+      list-style: none; padding: 0; margin: 0 auto; max-width: 600px;
+      display: grid; grid-template-columns: repeat(2, auto);
+      gap: 12px; justify-content: center; justify-items: center;
+    }
+    .site-nav a {
+      display: block; text-decoration: none; text-align: center;
+      font-weight: 700; padding: 12px 16px; color: #fff !important;
+      border: 1px solid var(--pill-border); border-radius: 999px;
+      background: var(--pill-bg); backdrop-filter: blur(3px);
+      transition: background-color .2s ease, transform .12s ease, box-shadow .2s ease;
+    }
+    .site-nav a:hover {
+      background: var(--pill-hover); transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.18);
+    }
+    @media (max-width: 900px) { .site-nav ul { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .site-nav ul { grid-template-columns: 1fr; } }
+
+    .site-footer {
+      width: 100%; color: var(--text); text-align: center; padding: 20px 10px; font-size: .95rem;
+      position: relative; margin-top: 20px; border-top: 1px solid var(--pill-border);
+      background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.18));
+    }
+
+    @keyframes typing { 0% { width: 0 } 50% { width: 100% } 100% { width: 0 } }
+    @keyframes blink-caret { 50% { border-color: transparent; } }
+    .wave-animation {
+      font-family: "goodlife-script", sans-serif;
+      font-size: clamp(1.2rem, 4vw, 2.6rem);
+      overflow: hidden; border-right: 0.15em solid var(--accent);
+      white-space: nowrap; width: 0;
+      animation: typing 8s steps(30, end) infinite, blink-caret 2.75s step-end infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <video autoplay muted loop playsinline preload="metadata" class="video-background">
+    <source src="8thumbnail.mp4" type="video/mp4">
+  </video>
+
+  <header class="title-header">
+    <h1>My Personal Playlist</h1>
+    <br>
+    <h2>Justine Leigh</h2>
+  </header>
+
+  <div id="audio-player-wrapper">
+    <audio id="audio-player" controls>
+      <source id="audio-source" src="" type="audio/mpeg">
+      Your browser does not support the audio element.
+    </audio>
+    <div id="now-playing-title"><h2 class="wave-animation">Click on Song</h2></div>
+  </div>
+
+  <!-- Playlist Grid: 2 columns × 2 sections each -->
+  <section class="playlist-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="playlist-column">
+
+      <!-- Section 1 (left) -->
+      <div class="playlist-section">
+        <h2>MOOD - Bollywood</h2>
+        <ul class="playlist">
+          <li class="track" data-src="Guzarish.mp3" data-title="Guzarish">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Guzarish</h3>
+          </li>
+          <li class="track" data-src="DilKaRishta.mp3" data-title="Dil Ka Rishta">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Dil Ka Rishta</h3>
+          </li>
+          <li class="track" data-src="Kuchh-Khaas.mp3" data-title="Kuchh Khaas">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Kuchh Khaas</h3>
+          </li>
+          <li class="track" data-src="ShanoShano.mp3" data-title="Shano Shano">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Shano Shano</h3>
+          </li>
+          <li class="track" data-src="Zindagi.mp3" data-title="Zindagi">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Zindagi</h3>
+          </li>
+          <li class="track" data-src="TuMuskura.mp3" data-title="Tu Muskura">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Tu Muskura</h3>
+          </li>
+          <li class="track" data-src="MastamMastam.mp3" data-title="Mastam Mastam">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Mastam Mastam</h3>
+          </li>
+              <li class="track" data-src="Marjaani.mp3" data-title="Marjaani">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Marjaani</h3>
+          </li>
+          <li class="track" data-src="khadaya_khair.mp3" data-title="Khadaya Khair">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Khadaya Khair</h3>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 2 (left) — Mixes -->
+      <div class="playlist-section">
+        <h2> MOOD : Meditative- think Himalayas </h2>
+        <ul class="playlist">
+          <li class="track" data-src="ompadmi.wav" data-title="Om muni padme hum">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Om muni padme hum</h3>
+          </li>
+          <li class="track" data-src="Devi-Puja.mp3" data-title="Devi Puja">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Devi Puja</h3>
+          </li>
+          <li class="track" data-src="AhamaMantra.mp3" data-title="Amaha mantra">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Amaha mantra</h3>
+          </li>
+          <li class="track" data-src="Umdotclaplityclap.mp3" data-title="Ummm dot dot">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Um dot dot</h3>
+          </li>
+          <li class="track" data-src="Padmeshang.mp3" data-title="Shangrah la">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Shangrah La</h3>
+          </li>
+    
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="playlist-column">
+
+      <!-- Section 3 (right) -->
+      <div class="playlist-section">
+        <h2>MOOD- Latin</h2>
+        <ul class="playlist">
+    
+          <li class="track" data-src="Timeline 1.wav" data-title="Bachata Mix">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3> Bachata Mix</h3>
+          </li>
+          <li class="track" data-src="Salsamix2.wav" data-title="Salsa Mix">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Salsa Mix</h3>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 4 (right) — Part 2 -->
+      <div class="playlist-section">
+        <h2>MOOD : Nostalgia - think nineties and noughties</h2>
+        <ul class="playlist">
+          <li class="track" data-src="The-Gods-Will-Lift-You.m4a" data-title="The Gods Will Lift You">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>The Gods Will Lift You</h3>
+          </li>
+          <li class="track" data-src="Nothing-on-you.m4a" data-title="Nothing on you">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Nothing on you</h3>
+          </li>
+          <li class="track" data-src="one-crowded-hour.m4a" data-title="One Crowded Hour">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>One Crowded Hour</h3>
+          </li>
+          <li class="track" data-src="RidinSolo.m4a" data-title="Ridin'Solo">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Ridin'Solo</h3>
+          </li>
+          <li class="track" data-src="Fireflies.m4a" data-title="Fireflies">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Fireflies</h3>
+          </li>
+    
+
+              <!-- Section 5(right) -->
+      <div class="playlist-section">
+        <h2>MOOD- Philosophy</h2>
+        <ul class="playlist">
+    
+          <li class="track" data-src="AlanWatts-howtoplaythegame.mp4" data-title="Alan Watts- how to play the game">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3> Allan Watts- How to Play the Game</h3>
+          </li>
+          <li class="track" data-src="AlanWatts-LivingtheUncalculated Life.mp4" data-title="Alan Watts- the uncalculated the life">
+            <button class="play-button" aria-label="Play">▶</button>
+            <h3>Alan Watts- the uncalculated the life</h3>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <nav class="site-nav" aria-label="Primary">
+    <ul>
+      <li><a href="https://koalaspiessydney.au/">About</a></li>
+    </ul>
+  </nav>
+
+  <footer class="site-footer">
+    <p>&copy; 2025 Justine Kelly &amp; Koala Spies</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const audioPlayer = document.getElementById('audio-player');
+      const audioSource = document.getElementById('audio-source');
+      const titleEl = document.querySelector('#now-playing-title h2');
+      const tracks = Array.from(document.querySelectorAll('.track'));
+      let currentTrackIndex = -1;
+
+      function updateButton(trackEl, isPlaying) {
+        const btn = trackEl.querySelector('.play-button');
+        if (!btn) return;
+        btn.textContent = isPlaying ? '⏸' : '▶';
+        btn.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+      }
+
+      function clearActive() {
+        tracks.forEach(t => {
+          t.classList.remove('active');
+          updateButton(t, false);
+        });
+      }
+
+      function playTrack(index) {
+        const track = tracks[index];
+        if (!track) return;
+        const src = track.getAttribute('data-src');
+        const t = track.getAttribute('data-title') || track.querySelector('h3')?.textContent?.trim() || 'Untitled';
+
+        audioSource.src = src;
+        audioPlayer.load();
+        audioPlayer.play();
+
+        titleEl.textContent = `Now Playing: ${t}`;
+        titleEl.classList.remove('wave-animation');
+        void titleEl.offsetWidth;
+        titleEl.classList.add('wave-animation');
+
+        clearActive();
+        track.classList.add('active');
+        updateButton(track, true);
+
+        currentTrackIndex = index;
+        document.getElementById('audio-player-wrapper').classList.add('playing');
+      }
+
+      function togglePause(index) {
+        if (audioPlayer.paused) {
+          audioPlayer.play();
+          tracks[index].classList.add('active');
+          updateButton(tracks[index], true);
+          document.getElementById('audio-player-wrapper').classList.add('playing');
+        } else {
+          audioPlayer.pause();
+          tracks[index].classList.remove('active');
+          updateButton(tracks[index], false);
+          document.getElementById('audio-player-wrapper').classList.remove('playing');
+        }
+      }
+
+      tracks.forEach((track, index) => {
+        track.addEventListener('click', (event) => {
+          // If clicking the button on the currently active track, toggle pause
+          if (index === currentTrackIndex) {
+            togglePause(index);
+          } else {
+            playTrack(index);
+          }
+        });
+      });
+
+      audioPlayer.addEventListener('ended', () => {
+        clearActive();
+        const nextIndex = currentTrackIndex + 1;
+        if (nextIndex < tracks.length) {
+          playTrack(nextIndex);
+        } else {
+          titleEl.classList.remove('wave-animation');
+          document.getElementById('audio-player-wrapper').classList.remove('playing');
+          currentTrackIndex = -1;
+        }
+      });
+
+      // Keep button state in sync with native audio controls
+      audioPlayer.addEventListener('pause', () => {
+        if (currentTrackIndex >= 0) {
+          tracks[currentTrackIndex].classList.remove('active');
+          updateButton(tracks[currentTrackIndex], false);
+        }
+        titleEl.classList.remove('wave-animation');
+        document.getElementById('audio-player-wrapper').classList.remove('playing');
+      });
+
+      audioPlayer.addEventListener('play', () => {
+        if (currentTrackIndex >= 0) {
+          tracks[currentTrackIndex].classList.add('active');
+          updateButton(tracks[currentTrackIndex], true);
+        }
+        titleEl.classList.add('wave-animation');
+        document.getElementById('audio-player-wrapper').classList.add('playing');
+      });
+    });
+  </script>
+</body>
+</html>
